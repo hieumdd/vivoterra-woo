@@ -44,7 +44,7 @@ def transform(rows: list) -> list:
     ]
 
 
-def main():
+def mysql_to_bq_bulk():
     query = f"""
     WITH orders AS (
         SELECT
@@ -76,9 +76,8 @@ def main():
             JOIN d23x_postmeta pm ON p.ID = pm.post_id
         WHERE
             post_type = 'shop_order'
-            AND post_date BETWEEN '2021-01-01'
-            AND '2021-11-01'
-            AND post_status = 'wc-completed'
+            AND post_date 
+            BETWEEN '2021-01-01' AND '2021-11-01'
         GROUP BY
             p.ID
     ),
@@ -154,6 +153,5 @@ def main():
             ],
         ),
     ).result()
-
-
-main()
+    
+    return f'{len(rows)} rows inserted successfully...'
