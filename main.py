@@ -36,6 +36,9 @@ def transform(rows: list) -> list:
             "_variation_id": safe_int(row["_variation_id"]),
             "_qty": safe_int(row["_qty"]),
             "_line_total": safe_float(row["_line_total"]),
+            "_afl_wc_utm_utm_source": row["_afl_wc_utm_utm_source"],
+            "_afl_wc_utm_utm_medium": row["_afl_wc_utm_utm_medium"],
+            "_afl_wc_utm_utm_campaign": row["_afl_wc_utm_utm_campaign"],
         }
         for row in rows
     ]
@@ -64,7 +67,10 @@ def main():
             MAX(IF(pm.meta_key = '_shipping_postcode',pm.meta_value,NULL)) AS _shipping_postcode,
             MAX(IF(pm.meta_key = '_order_total',pm.meta_value,NULL)) AS order_total,
             MAX(IF(pm.meta_key = '_order_tax',pm.meta_value,NULL)) AS order_tax,
-            MAX(IF(pm.meta_key = '_paid_date',pm.meta_value,NULL)) AS paid_date
+            MAX(IF(pm.meta_key = '_paid_date',pm.meta_value,NULL)) AS paid_date,
+            MAX(IF(pm.meta_key = '_afl_wc_utm_utm_source',pm.meta_value,NULL)) AS _afl_wc_utm_utm_source,
+            MAX(IF(pm.meta_key = '_afl_wc_utm_utm_medium',pm.meta_value,NULL)) AS _afl_wc_utm_utm_medium,
+            MAX(IF(pm.meta_key = '_afl_wc_utm_utm_campaign',pm.meta_value,NULL)) AS _afl_wc_utm_utm_campaign
         FROM
             d23x_posts p
             JOIN d23x_postmeta pm ON p.ID = pm.post_id
@@ -142,6 +148,9 @@ def main():
                 {"name": "_variation_id", "type": "INTEGER"},
                 {"name": "_qty", "type": "INTEGER"},
                 {"name": "_line_total", "type": "NUMERIC"},
+                {"name": "_afl_wc_utm_utm_source", "type": "STRING"},
+                {"name": "_afl_wc_utm_utm_medium", "type": "STRING"},
+                {"name": "_afl_wc_utm_utm_campaign", "type": "STRING"},
             ],
         ),
     ).result()
