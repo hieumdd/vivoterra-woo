@@ -74,45 +74,57 @@ def mysql_to_bq_bulk():
         FROM
             d23x_posts p
             JOIN d23x_postmeta pm ON p.ID = pm.post_id
-        WHERE
-            post_type = 'shop_order'
-            AND post_date 
-            BETWEEN '2021-01-01' AND '2021-11-01'
         GROUP BY
             p.ID
-    ),
-    order_items AS (
+        ),
+        order_items AS (
+            SELECT
+                oi.order_id,
+                oi.order_item_id,
+                oi.order_item_name,
+                oi.order_item_type,
+                MAX(IF(oim.meta_key = '_product_id',oim.meta_value,NULL)) AS _product_id,
+                MAX(IF(oim.meta_key = '_variation_id',oim.meta_value,NULL)) AS _variation_id,
+                MAX(IF(oim.meta_key = '_qty',oim.meta_value,NULL)) AS _qty,
+                MAX(IF(oim.meta_key = '_line_total',oim.meta_value,NULL)) AS _line_total
+            FROM
+                d23x_woocommerce_order_items oi
+                JOIN d23x_woocommerce_order_itemmeta oim ON oi.order_item_id = oim.order_item_id
+            GROUP BY 
+                oi.order_id,
+                oi.order_item_id,
+                oi.order_item_name,
+                oi.order_item_type
+        ),
+        items_categories AS (
+        SELECT DISTINCT
+            t.name,
+            oim.meta_value
+        FROM d23x_term_relationships tr
+        INNER JOIN d23x_term_taxonomy tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+        INNER JOIN d23x_terms t ON tt.term_id = t.term_id
+        INNER JOIN d23x_woocommerce_order_itemmeta oim ON tr.object_id = oim.meta_value
+        INNER JOIN d23x_woocommerce_order_items oi ON oim.order_item_id = oi.order_item_id
+        INNER JOIN d23x_posts as o ON oi.order_id = o.ID
+        WHERE tt.taxonomy = 'product_cat'
+            AND oim.meta_key = '_product_id'
+            AND o.post_type = 'shop_order'
+        )
         SELECT
-            oi.order_id,
+            o.*,
             oi.order_item_id,
             oi.order_item_name,
             oi.order_item_type,
-            MAX(IF(oim.meta_key = '_product_id',oim.meta_value,NULL)) AS _product_id,
-            MAX(IF(oim.meta_key = '_variation_id',oim.meta_value,NULL)) AS _variation_id,
-            MAX(IF(oim.meta_key = '_qty',oim.meta_value,NULL)) AS _qty,
-            MAX(IF(oim.meta_key = '_line_total',oim.meta_value,NULL)) AS _line_total
+            oi._product_id,
+            oi._variation_id,
+            oi._qty,
+            oi._line_total,
+            ic.name AS product_categories
         FROM
-            d23x_woocommerce_order_items oi
-            JOIN d23x_woocommerce_order_itemmeta oim ON oi.order_item_id = oim.order_item_id
-        GROUP BY 
-            oi.order_id,
-            oi.order_item_id,
-            oi.order_item_name,
-            oi.order_item_type
-    )
-    SELECT
-        o.*,
-        oi.order_item_id,
-        oi.order_item_name,
-        oi.order_item_type,
-        oi._product_id,
-        oi._variation_id,
-        oi._qty,
-        oi._line_total
-    FROM
-        orders o
-        JOIN order_items oi ON o.id = oi.order_id
-    """
+            orders o
+            JOIN order_items oi ON o.id = oi.order_id
+            LEFT JOIN items_categories ic ON oi._product_id = ic.meta_value
+        """
     rows = transform(get(query))
     BQ_CLIENT.load_table_from_json(
         rows,
