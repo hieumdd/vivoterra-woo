@@ -19,6 +19,7 @@ def transform(rows: list) -> list:
             "_billing_address_2": row["_billing_address_2"],
             "_billing_city": row["_billing_city"],
             "_billing_state": row["_billing_state"],
+            "_billing_postcode": row["_billing_postcode"], 
             "_shipping_first_name": row["_shipping_first_name"],
             "_shipping_last_name": row["_shipping_last_name"],
             "_shipping_address_1": row["_shipping_address_1"],
@@ -26,9 +27,14 @@ def transform(rows: list) -> list:
             "_shipping_city": row["_shipping_city"],
             "_shipping_state": row["_shipping_state"],
             "_shipping_postcode": row["_shipping_postcode"],
+            "order_shipping": safe_float(row["order_shipping"]), 
             "order_total": safe_float(row["order_total"]),
             "order_tax": safe_float(row["order_tax"]),
             "paid_date": row["paid_date"],
+            "purchase_status": row["purchase_status"], 
+            "_afl_wc_utm_utm_source": row["_afl_wc_utm_utm_source"],
+            "_afl_wc_utm_utm_medium": row["_afl_wc_utm_utm_medium"],
+            "_afl_wc_utm_utm_campaign": row["_afl_wc_utm_utm_campaign"], 
             "order_item_id": safe_int(row["order_item_id"]),
             "order_item_name": row["order_item_name"],
             "order_item_type": row["order_item_type"],
@@ -36,9 +42,7 @@ def transform(rows: list) -> list:
             "_variation_id": safe_int(row["_variation_id"]),
             "_qty": safe_int(row["_qty"]),
             "_line_total": safe_float(row["_line_total"]),
-            "_afl_wc_utm_utm_source": row["_afl_wc_utm_utm_source"],
-            "_afl_wc_utm_utm_medium": row["_afl_wc_utm_utm_medium"],
-            "_afl_wc_utm_utm_campaign": row["_afl_wc_utm_utm_campaign"],
+            "product_categories": row["product_categories"],
         }
         for row in rows
     ]
@@ -65,9 +69,16 @@ def mysql_to_bq_bulk():
             MAX(IF(pm.meta_key = '_shipping_city',pm.meta_value,NULL)) AS _shipping_city,
             MAX(IF(pm.meta_key = '_shipping_state',pm.meta_value,NULL)) AS _shipping_state,
             MAX(IF(pm.meta_key = '_shipping_postcode',pm.meta_value,NULL)) AS _shipping_postcode,
+            MAX(IF(pm.meta_key = '_order_shipping',pm.meta_value,NULL)) AS order_shipping,
             MAX(IF(pm.meta_key = '_order_total',pm.meta_value,NULL)) AS order_total,
             MAX(IF(pm.meta_key = '_order_tax',pm.meta_value,NULL)) AS order_tax,
             MAX(IF(pm.meta_key = '_paid_date',pm.meta_value,NULL)) AS paid_date,
+            CASE p.post_status
+		      WHEN 'wc-completed'  THEN 'Completed'
+		      WHEN 'wc-cancelled'  THEN 'Cancelled'
+		      WHEN 'wc-delivered'   THEN 'Delivered'
+		    ELSE 'Unknown'
+		    END AS 'purchase_status',
             MAX(IF(pm.meta_key = '_afl_wc_utm_utm_source',pm.meta_value,NULL)) AS _afl_wc_utm_utm_source,
             MAX(IF(pm.meta_key = '_afl_wc_utm_utm_medium',pm.meta_value,NULL)) AS _afl_wc_utm_utm_medium,
             MAX(IF(pm.meta_key = '_afl_wc_utm_utm_campaign',pm.meta_value,NULL)) AS _afl_wc_utm_utm_campaign
@@ -142,6 +153,7 @@ def mysql_to_bq_bulk():
                 {"name": "_billing_address_2", "type": "STRING"},
                 {"name": "_billing_city", "type": "STRING"},
                 {"name": "_billing_state", "type": "STRING"},
+                {"name": "_billing_postcode", "type": "STRING"}, 
                 {"name": "_shipping_first_name", "type": "STRING"},
                 {"name": "_shipping_last_name", "type": "STRING"},
                 {"name": "_shipping_address_1", "type": "STRING"},
@@ -149,9 +161,14 @@ def mysql_to_bq_bulk():
                 {"name": "_shipping_city", "type": "STRING"},
                 {"name": "_shipping_state", "type": "STRING"},
                 {"name": "_shipping_postcode", "type": "STRING"},
-                {"name": "order_total", "type": "NUMERIC"},
+                {"name": "order_shipping", "type": "NUMERIC"},
+                {"name": "order_total", "type": "NUMERIC"}, 
                 {"name": "order_tax", "type": "NUMERIC"},
                 {"name": "paid_date", "type": "TIMESTAMP"},
+                {"name": "purchase_status", "type": "STRING"},
+                {"name": "_afl_wc_utm_utm_source", "type": "STRING"},
+                {"name": "_afl_wc_utm_utm_medium", "type": "STRING"},
+                {"name": "_afl_wc_utm_utm_campaign", "type": "STRING"},
                 {"name": "order_item_id", "type": "INTEGER"},
                 {"name": "order_item_name", "type": "STRING"},
                 {"name": "order_item_type", "type": "STRING"},
@@ -159,9 +176,7 @@ def mysql_to_bq_bulk():
                 {"name": "_variation_id", "type": "INTEGER"},
                 {"name": "_qty", "type": "INTEGER"},
                 {"name": "_line_total", "type": "NUMERIC"},
-                {"name": "_afl_wc_utm_utm_source", "type": "STRING"},
-                {"name": "_afl_wc_utm_utm_medium", "type": "STRING"},
-                {"name": "_afl_wc_utm_utm_campaign", "type": "STRING"},
+                {"name": "product_categories", "type": "STRING"},
             ],
         ),
     ).result()
