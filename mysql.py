@@ -1,5 +1,3 @@
-import os
-
 from sshtunnel import SSHTunnelForwarder
 from sqlalchemy import create_engine
 from sqlalchemy.engine import URL, Engine
@@ -7,15 +5,15 @@ from sqlalchemy.engine import URL, Engine
 LOCALHOST = "localhost"
 
 
-def get_engine(tunnel) -> Engine:
+def get_engine(auth:dict, tunnel: SSHTunnelForwarder) -> Engine:
     return create_engine(
         URL.create(
             drivername="mysql+pymysql",
-            username=os.getenv("MYSQL_USER"),
-            password=os.getenv("MYSQL_PWD"),
+            username=auth["MYSQL_USER"],
+            password=auth["MYSQL_PWD"],
             host=LOCALHOST,
             port=tunnel.local_bind_port,
-            database=os.getenv("MYSQL_DB"),
+            database=auth["MYSQL_DB"],
         ),
     )
 
@@ -26,11 +24,11 @@ def get_data(engine: Engine, query: str) -> list:
         return [dict(zip(results.keys(), result)) for result in results.fetchall()]
 
 
-def get(query: str) -> list:
+def get(auth: dict, query: str) -> list:
     with SSHTunnelForwarder(
-        (os.getenv("SSH_HOST"), int(os.getenv("SSH_PORT"))),
-        ssh_username=os.getenv("SSH_USER"),
-        ssh_password=os.getenv("SSH_PWD"),
+        (auth["SSH_HOST"], int(auth["SSH_PORT"])),
+        ssh_username=auth["SSH_USER"],
+        ssh_password=auth["SSH_PWD"],
         remote_bind_address=(LOCALHOST, 3306),
     ) as tunnel:
-        return get_data(get_engine(tunnel), query)
+        return get_data(get_engine(auth, tunnel), query)
