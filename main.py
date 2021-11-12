@@ -36,6 +36,7 @@ SCHEMA = [
     {"name": "order_tax", "type": "NUMERIC"},
     {"name": "paid_date", "type": "TIMESTAMP"},
     {"name": "purchase_status", "type": "STRING"},
+    {"name": "payment_method", "type": "STRING"},
     {"name": "_afl_wc_utm_utm_source", "type": "STRING"},
     {"name": "_afl_wc_utm_utm_medium", "type": "STRING"},
     {"name": "_afl_wc_utm_utm_campaign", "type": "STRING"},
@@ -84,6 +85,7 @@ def query(start: str, end: str) -> str:
 		      WHEN 'wc-delivered'   THEN 'Delivered'
 		    ELSE 'Unknown'
 		    END AS 'purchase_status',
+            MAX(IF(pm.meta_key = '_payment_method',pm.meta_value,NULL)) AS payment_method,
             MAX(IF(pm.meta_key = '_afl_wc_utm_utm_source',pm.meta_value,NULL)) AS _afl_wc_utm_utm_source,
             MAX(IF(pm.meta_key = '_afl_wc_utm_utm_medium',pm.meta_value,NULL)) AS _afl_wc_utm_utm_medium,
             MAX(IF(pm.meta_key = '_afl_wc_utm_utm_campaign',pm.meta_value,NULL)) AS _afl_wc_utm_utm_campaign
@@ -186,6 +188,7 @@ def transform(rows: list) -> list:
             "order_tax": safe_float(row["order_tax"]),
             "paid_date": row["paid_date"],
             "purchase_status": row["purchase_status"],
+            "payment_method": row["payment_method"],
             "_afl_wc_utm_utm_source": row["_afl_wc_utm_utm_source"],
             "_afl_wc_utm_utm_medium": row["_afl_wc_utm_utm_medium"],
             "_afl_wc_utm_utm_campaign": row["_afl_wc_utm_utm_campaign"],
