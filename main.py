@@ -48,6 +48,7 @@ SCHEMA = [
     {"name": "_qty", "type": "INTEGER"},
     {"name": "_line_total", "type": "NUMERIC"},
     {"name": "product_categories", "type": "STRING"},
+    {"name": "_env", "type": "STRING"},
     {"name": "_batched_at", "type": "TIMESTAMP"},
 ]
 
@@ -159,7 +160,7 @@ def get_date_range(start: str, end: str) -> tuple[str, str]:
     return _start, _end
 
 
-def transform(rows: list) -> list:
+def transform(rows: list, env: str) -> list:
     safe_float = lambda x: float(x) if x else None
     safe_int = lambda x: int(x) if x else None
     return [
@@ -200,6 +201,7 @@ def transform(rows: list) -> list:
             "_qty": safe_int(row["_qty"]),
             "_line_total": safe_float(row["_line_total"]),
             "product_categories": row["product_categories"],
+            "_env": env,
             "_batched_at": NOW.isoformat(timespec="seconds"),
         }
         for row in rows
@@ -235,7 +237,8 @@ def main(request) -> dict:
         get(
             request_json["auth"],
             query(start, end),
-        )
+        ),
+        request_json["auth"]["env"],
     )
     output_rows: int = (
         BQ_CLIENT.load_table_from_json(

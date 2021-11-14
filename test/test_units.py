@@ -19,11 +19,11 @@ def run(data: dict) -> dict:
     "auth",
     [
         creds["EN"],
-        # creds['DE'],
+        creds["DE"],
     ],
     ids=[
         "EN",
-        # "DE",
+        "DE",
     ],
 )
 @pytest.mark.parametrize(
@@ -32,7 +32,10 @@ def run(data: dict) -> dict:
         (None, None),
         ("2018-01-01", "2021-12-01"),
     ],
-    ids=["auto", "manual"],
+    ids=[
+        "auto",
+        "manual",
+    ],
 )
 def test_pipelines(auth, start, end):
     res = run(
