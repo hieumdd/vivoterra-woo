@@ -34,6 +34,7 @@ SCHEMA = [
     {"name": "order_shipping", "type": "NUMERIC"},
     {"name": "order_total", "type": "NUMERIC"},
     {"name": "order_tax", "type": "NUMERIC"},
+    {"name": "order_currency", "type": "STRING"},
     {"name": "paid_date", "type": "TIMESTAMP"},
     {"name": "purchase_status", "type": "STRING"},
     {"name": "payment_method", "type": "STRING"},
@@ -79,6 +80,7 @@ def query(start: str, end: str) -> str:
             MAX(IF(pm.meta_key = '_order_shipping',pm.meta_value,NULL)) AS order_shipping,
             MAX(IF(pm.meta_key = '_order_total',pm.meta_value,NULL)) AS order_total,
             MAX(IF(pm.meta_key = '_order_tax',pm.meta_value,NULL)) AS order_tax,
+            MAX(IF(pm.meta_key = '_order_currency', pm.meta_value, NULL)) AS order_currency,
             MAX(IF(pm.meta_key = '_paid_date',pm.meta_value,NULL)) AS paid_date,
             CASE p.post_status
 		      WHEN 'wc-completed'  THEN 'Completed'
@@ -187,6 +189,7 @@ def transform(rows: list, env: str) -> list:
             "order_shipping": safe_float(row["order_shipping"]),
             "order_total": safe_float(row["order_total"]),
             "order_tax": safe_float(row["order_tax"]),
+            "order_currency": row["order_currency"],
             "paid_date": row["paid_date"],
             "purchase_status": row["purchase_status"],
             "payment_method": row["payment_method"],
