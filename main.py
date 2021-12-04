@@ -34,6 +34,7 @@ SCHEMA = [
     {"name": "order_shipping", "type": "NUMERIC"},
     {"name": "order_total", "type": "NUMERIC"},
     {"name": "order_tax", "type": "NUMERIC"},
+    {"name": "order_currency", "type": "STRING"},
     {"name": "paid_date", "type": "TIMESTAMP"},
     {"name": "purchase_status", "type": "STRING"},
     {"name": "payment_method", "type": "STRING"},
@@ -48,6 +49,7 @@ SCHEMA = [
     {"name": "_qty", "type": "INTEGER"},
     {"name": "_line_total", "type": "NUMERIC"},
     {"name": "product_categories", "type": "STRING"},
+    {"name": "_env", "type": "STRING"},
     {"name": "_batched_at", "type": "TIMESTAMP"},
 ]
 
@@ -78,6 +80,7 @@ def query(start: str, end: str) -> str:
             MAX(IF(pm.meta_key = '_order_shipping',pm.meta_value,NULL)) AS order_shipping,
             MAX(IF(pm.meta_key = '_order_total',pm.meta_value,NULL)) AS order_total,
             MAX(IF(pm.meta_key = '_order_tax',pm.meta_value,NULL)) AS order_tax,
+            MAX(IF(pm.meta_key = '_order_currency', pm.meta_value, NULL)) AS order_currency,
             MAX(IF(pm.meta_key = '_paid_date',pm.meta_value,NULL)) AS paid_date,
             CASE p.post_status
 		      WHEN 'wc-completed'  THEN 'Completed'
@@ -159,7 +162,7 @@ def get_date_range(start: str, end: str) -> tuple[str, str]:
     return _start, _end
 
 
-def transform(rows: list) -> list:
+def transform(rows: list, env: str) -> list:
     safe_float = lambda x: float(x) if x else None
     safe_int = lambda x: int(x) if x else None
     return [
@@ -186,6 +189,7 @@ def transform(rows: list) -> list:
             "order_shipping": safe_float(row["order_shipping"]),
             "order_total": safe_float(row["order_total"]),
             "order_tax": safe_float(row["order_tax"]),
+            "order_currency": row["order_currency"],
             "paid_date": row["paid_date"],
             "purchase_status": row["purchase_status"],
             "payment_method": row["payment_method"],
@@ -200,6 +204,7 @@ def transform(rows: list) -> list:
             "_qty": safe_int(row["_qty"]),
             "_line_total": safe_float(row["_line_total"]),
             "product_categories": row["product_categories"],
+            "_env": env,
             "_batched_at": NOW.isoformat(timespec="seconds"),
         }
         for row in rows
@@ -235,7 +240,8 @@ def main(request) -> dict:
         get(
             request_json["auth"],
             query(start, end),
-        )
+        ),
+        request_json["auth"]["env"],
     )
     output_rows: int = (
         BQ_CLIENT.load_table_from_json(
