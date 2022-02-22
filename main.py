@@ -246,7 +246,7 @@ def main(request) -> dict:
     output_rows: int = (
         BQ_CLIENT.load_table_from_json(
             rows,
-            f"{DATASET}.{TABLE}",
+            f"{DATASET}.{TABLE}_{request_json['auth']['env']}",
             job_config=bigquery.LoadJobConfig(
                 create_disposition="CREATE_IF_NEEDED",
                 write_disposition="WRITE_APPEND",
