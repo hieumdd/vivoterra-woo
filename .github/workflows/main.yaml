@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 env:
-  FUNCTION_NAME: vivoterra_woo
+  FUNCTION_NAME: vivoterra-woo
 
 jobs:
   setup:
